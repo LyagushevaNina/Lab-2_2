@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CA1861
 #pragma warning disable CS8618
-
+// 2-22
+// n = 8 бит
+// F(x) = 1 + x + x3 + x7 + x8
 using System.Collections;
 using System.Numerics;
 using System.Text;
@@ -9,54 +11,48 @@ internal static class Program
 {
     internal static void Main()
     {
-        Console.Clear();
-
-        // Создаем объект класса LFSR
         LFSR lfsr = new();
-
-        // Полином определяет, какие биты из регистра будут использоваться для вычисления следующего бита в последовательности выходных значений регистра
-        BitArray polynomial = new(new bool[] { true, false, true, false, false, false, false, true, true });
+     
+        BitArray polynomial = new(new bool[] { true, true, false, false, false, false, false, true, true });
 
         // Начальное состояние регистра
-        BitArray Primary = new(new bool[] { true, false, true, false, false, false, false, true, true });
+        BitArray primary = new(new bool[] { true, true, true, false, false, true, false, true, true });
 
-        // Инициализируем LFSR
-        lfsr.Init(Primary, polynomial);
+        lfsr.Init(primary, polynomial);
 
-        // Определяем интересующие нас данные
-        (int steps, int zero, int one, int even, int uneven) = GetPeriodInfo(lfsr, Primary);
+        (int steps, int zero, int one, int even, int uneven) = PeriodDate(lfsr, primary);
 
-        Console.WriteLine($"{BitArrayToString(Primary)} - initial state");
-        Console.WriteLine($"Generator period length: {steps}");
-        Console.WriteLine($"Number of zeros in one period in bits: {zero}");
-        Console.WriteLine($"Number of ones in one period in bits: {one}");
-        Console.WriteLine($"Number of even numbers in one period: {even}");
-        Console.WriteLine($"Number of odd numbers in one period: {uneven}");
+        Console.WriteLine($"{BitArrayToString(primary)} - начальное состояние");
+        Console.WriteLine($"Период работы генератора: {steps}");
+        Console.WriteLine($"Количество нулей в битах: {zero}");
+        Console.WriteLine($"Количество единиц в битах: {one}");
+        Console.WriteLine($"Количество четных чисел: {even}");
+        Console.WriteLine($"Количество нечетных чисел: {uneven}");
 
     }
 
     // Метод для определения длины периода
-    private static (int steps, int zero, int one, int even, int uneven) GetPeriodInfo(LFSR lfsr, BitArray Primary)
+    private static (int steps, int zero, int one, int even, int uneven) PeriodDate(LFSR lfsr, BitArray primary)
     {
-        BitArray currentState = Primary;
+        BitArray currentState = primary;
         int steps = 0;
         int even = 0;
         int zero = 0;
-        Console.WriteLine(BitArrayToString(Primary));
+        Console.WriteLine(BitArrayToString(primary));
         do
         {
             currentState = lfsr.NextState(currentState);
             Console.WriteLine(BitArrayToString(currentState));
             steps++;
 
-            // Подсчет количества четных и нечетных чисел при однобайтовом представлении
+            // Четные и нечетные чисела
             BigInteger currentStateBigInt = BitArrayToBigInt(currentState);
             if (currentStateBigInt % 2 == 0)
             {
                 even++;
             }
 
-            // Подсчет количества нулей и единиц при битовом представлении
+            // Нули и единицы 
             foreach (bool bit in currentState)
             {
                 if (bit == false)
@@ -64,9 +60,9 @@ internal static class Program
                     zero++;
                 }
             }
-        } while (!Primary.Cast<bool>().SequenceEqual(currentState.Cast<bool>()));
+        } while (!primary.Cast<bool>().SequenceEqual(currentState.Cast<bool>()));
 
-        return (steps += 1, zero, (Primary.Length * steps) - zero, even, steps - even);
+        return (steps += 1, zero, (primary.Length * steps) - zero, even, steps - even);
     }
     internal static string BitArrayToString(BitArray array)
     {
@@ -85,7 +81,7 @@ internal static class Program
         {
             if (bitArray[i])
             {
-                result |= BigInteger.One << i; // Установка i-го бита в результате
+                result |= BigInteger.One << i;
             }
         }
 
@@ -94,29 +90,25 @@ internal static class Program
 }
 internal sealed class LFSR
 {
-    // Полином, определяющий характеристики генератора
     internal BitArray Polynomial { get; set; }
 
-    // Начальное состояние регистра
     internal BitArray Primary { get; set; }
 
-    // Метод для инициализации LFSR с указанными начальным состоянием и полиномом
     internal void Init(BitArray _primary, BitArray _polynomial)
     {
         Polynomial = _polynomial;
         Primary = _primary;
     }
 
-    // Метод для генерации следующего состояния на основе текущего состояния
     internal BitArray NextState(BitArray currentState)
     {
         BitArray nextState = new(currentState.Length);
 
-        // Вычисляем новое значение для первого бита с использованием XOR
+        // Используем XOR для вычисления нового значения 
         BitArray xoredBits = XOR(currentState, Polynomial);
         nextState[0] = xoredBits[0];
 
-        // Копируем все остальные биты из предыдущего состояния
+        // Копируем биты из предыдущего состояния
         for (int i = 1; i < currentState.Length; i++)
         {
             nextState[i] = currentState[i - 1];
@@ -125,7 +117,7 @@ internal sealed class LFSR
         return nextState;
     }
 
-    // Метод для вычисления XOR битов
+    // Метод XOR 
     private static BitArray XOR(BitArray baseBits, BitArray polynomial)
     {
         BitArray result = new(polynomial.Length);
